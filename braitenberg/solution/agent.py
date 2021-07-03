@@ -63,7 +63,7 @@ class BraitenbergAgent:
             context.info("received first observations")
         self.rgb = dcu.bgr_from_rgb(dcu.bgr_from_jpg(camera.jpg_data))
 
-    def compute_commands(self) -> Tuple[float, float]:
+    def compute_commands(self, context: Context) -> Tuple[float, float]:
         """ Returns the commands (pwm_left, pwm_right) """
         # If we have not received any image, we don't move
         if self.rgb is None:
@@ -78,31 +78,48 @@ class BraitenbergAgent:
         # let's take only the intensity of RGB
         P = preprocess(self.rgb)
         # now we just compute the activation of our sensors
-        l = float(np.sum(P * self.left))
-        r = float(np.sum(P * self.right))
+        observed_left_intensity = float(np.sum(P * self.left))
+        observed_right_intensity = float(np.sum(P * self.right))
 
         # These are big numbers -- we want to normalize them.
         # We normalize them using the history
 
         # first, we remember the high/low of these raw signals
-        self.l_max = max(l, self.l_max)
-        self.r_max = max(r, self.r_max)
-        self.l_min = min(l, self.l_min)
-        self.r_min = min(r, self.r_min)
+        self.l_max = max(observed_left_intensity, self.l_max)
+        self.r_max = max(observed_right_intensity, self.r_max)
+        self.l_min = min(observed_left_intensity, self.l_min)
+        self.r_min = min(observed_right_intensity, self.r_min)
 
         # now rescale from 0 to 1
-        ls = rescale(l, self.l_min, self.l_max)
-        rs = rescale(r, self.r_min, self.r_max)
+        left_scale = rescale(observed_left_intensity, self.l_min, self.l_max)
+        right_scale = rescale(observed_right_intensity, self.r_min, self.r_max)
 
         gain = self.config.gain
         const = self.config.const
-        pwm_left = const + ls * gain
-        pwm_right = const + rs * gain
+        pwm_left = const + left_scale * gain
+        pwm_right = const + right_scale * gain
+        
+        context.info(f"==const== {const}")
+        context.info(f"==gain== {gain}")
+        
+        context.info("=====================Left=======================")
+        context.info(f"==observed_left_intensity {observed_left_intensity}==")
+        context.info(f"==left_scale== {left_scale}")
+        context.info(f"==pwm_left== {pwm_left}")
+        context.info("=====================Left=======================")
+        
+        context.info("=====================Right=======================")
+        context.info(f"==observed_right_intensity== {observed_right_intensity}")
+        context.info(f"==right_scale== {right_scale}")
+        context.info(f"==pwm_right== {pwm_right}")
+        context.info("=====================Right=======================")
+        
 
+        
         return pwm_left, pwm_right
 
     def on_received_get_commands(self, context: Context, data: GetCommands):
-        pwm_left, pwm_right = self.compute_commands()
+        pwm_left, pwm_right = self.compute_commands(context)
 
         col = RGB(0.0, 0.0, 1.0)
         col_left = RGB(pwm_left, pwm_left, 0.0)
@@ -116,10 +133,10 @@ class BraitenbergAgent:
         context.info("finish()")
 
 
-def rescale(a: float, L: float, U: float):
-    if np.allclose(L, U):
+def rescale(observed_intensity: float, min_intensity: float, max_intensity: float):
+    if np.allclose(min_intensity, max_intensity):
         return 0.0
-    return (a - L) / (U - L)
+    return (observed_intensity - min_intensity) / (max_intensity - min_intensity)
 
 
 def main():
