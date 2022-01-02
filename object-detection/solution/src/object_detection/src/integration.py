@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 def DT_TOKEN():
     # todo change this to your duckietown token
-    dt_token = "REPLACE_WITH_YOUR_TOKEN"
+    dt_token = "dt1-3nT8KSoxVh4MdNQ2jKLPbqyk1fciTvbyN118YWrFoRM6DwA-43dzqWFnWd8KBa1yev1g3UKnzVxZkkTbfXZzFRhKifNqTB8JFddRV1w1ahs4Q7tr2j"
     return dt_token
 
 def MODEL_NAME():
@@ -21,10 +21,10 @@ def MODEL_NAME():
 def NUMBER_FRAMES_SKIPPED():
     # todo change this number to drop more frames
     # (must be a positive integer)
-    return 0
+    return 2
 
 
-# In[ ]:
+# In[3]:
 
 
 # `class` is the class of a prediction
@@ -32,10 +32,11 @@ def filter_by_classes(clas):
     # Right now, this returns True for every object's class
     # Change this to only return True for duckies!
     # In other words, returning False means that this prediction is ignored.
-    return True
+    if clas != "duckie": return False
+    else: return True
 
 
-# In[ ]:
+# In[4]:
 
 
 # `scor` is the confidence score of a prediction
@@ -46,7 +47,7 @@ def filter_by_scores(scor):
     return True
 
 
-# In[ ]:
+# In[5]:
 
 
 # `bbox` is the bounding box of a prediction, in xyxy format
